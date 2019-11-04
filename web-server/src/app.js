@@ -1,6 +1,8 @@
 const path = require('path')
 const express = require('express')
 const hbs = require('hbs')
+const geocode = require('./utils/geocode')
+const forecast = require('./utils/forecast')
 
 const app = express()
 
@@ -40,19 +42,61 @@ app.get(('/help'), (req,res) => {
     })
 })
 
+app.get(('/help/*'), (req,res) => {
+    res.render('error', {
+        title: 'ERROR!',
+        errorMsg: 'Help article not found',
+        name: 'Saurabh Kasar'
+    })
+    
+})
+
 // app.com/forecast
 
 app.get('/forecast', (req, res) => {
-    res.send({
-        'forecast': 'clear', 
-        'location': 'Pune'
+    if(!req.query.address) {
+        return res.send({
+            error: 'You must provide an address!'
+        })
+    }
+   
+    geocode(req.query.address,(error,data) => {
+        if(error) {
+            return res.send({error})
+        } 
+            forecast(data.latitude, data.longitude, (error, forecastData) => {
+                if(error) {
+                    return res.send({error})
+                } 
+                    res.send({
+                        forecast: forecastData,
+                        location: data.location,
+                        address: req.query.address 
+                    })
+            })
+    })  
+})
+
+app.get('/products', (req,res) => {
+    if (!req.query.search) {
+        return res.send({
+            error: 'You must provide a search term!'
+        })
+    }
+    console.log(req.query)
+    res.send( {
+        products: []
     })
 })
 
 // app.com 404 page
 
 app.get('*',(req,res) => {
-    res.send('My 404 page')
+    res.render('error', {
+        title:'Error 404',
+        errorMsg: 'Page not found!',
+        name: 'Saurabh Kasar'
+    })
 })
 
 
